@@ -12,6 +12,7 @@ import { Location, WeatherResponse } from './weather.model';
 export class AppComponent implements OnInit {
   searchControl = new FormControl('');
   locations$: Observable<Location[]> = of([]);
+  private currentLocations: Location[] = [];
   
   selectedLocation: Location | null = null;
   weather: WeatherResponse | null = null;
@@ -24,12 +25,24 @@ export class AppComponent implements OnInit {
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(query => {
-        if (!query || query.length < 2) return of([]);
+        if (!query || query.length < 2) {
+          this.currentLocations = [];
+          return of([]);
+        }
         return this.weatherService.searchLocation(query).pipe(
           catchError(() => of([]))
         );
       })
     );
+
+    // Track current locations for enter key support
+    this.locations$.subscribe(locs => this.currentLocations = locs);
+  }
+
+  onEnter() {
+    if (this.currentLocations.length > 0) {
+      this.selectLocation(this.currentLocations[0]);
+    }
   }
 
   selectLocation(location: Location) {
